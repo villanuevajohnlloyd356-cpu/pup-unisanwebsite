@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main><section class="pagehead"><div class="wrap"><h1 id="t">Loading…</h1><p id="st"></p></div></section>
+<section class="s"><div class="wrap prose" id="b"></div></section></main>
+<script type="module">import {sb,layout,fmt,esc} from './js/app.js';layout('');
+const slug=new URLSearchParams(location.search).get('slug');
+const {data:p}=slug?await sb.from('pages').select('*').eq('slug',slug).eq('published',true).maybeSingle():{data:null};
+if(!p){t.textContent='Page not found';b.innerHTML='<p class="msg err">This page does not exist or is not published.</p><a class="btn" href="index.html">Back to Home</a>';}
+else{document.title=p.title+' – PUP Unisan';t.textContent=p.title;st.textContent=p.subtitle||'';b.innerHTML=fmt(p.body);}</script></body></html>

@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Program – PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main><section class="pagehead"><div class="wrap"><h1 id="t">Loading…</h1><p id="ab"></p></div></section>
+<section class="s"><div class="wrap prose" id="d"></div></section></main>
+<script type="module">import {sb,layout,esc,fmt,getSettings,admissionUrl} from './js/app.js';layout('programs.html');
+const slug=new URLSearchParams(location.search).get('slug');
+const {data:p}=slug?await sb.from('programs').select('*').eq('slug',slug).maybeSingle():{data:null};
+if(!p){t.textContent='Program not found';d.innerHTML='<p class="msg err">This program does not exist.</p><a class="btn" href="programs.html">Back to Academic Programs</a>';}
+else{document.title=p.name+' – PUP Unisan';t.textContent=p.name;ab.textContent=p.abbreviation||'';const s=await getSettings();
+d.innerHTML=(p.is_placeholder?'<span class="tag">Placeholder – not verified</span>':'')+(p.overview?'<h2>Overview</h2>'+fmt(p.overview):'')+(p.description?'<h2>Description</h2>'+fmt(p.description):'')
++((p.objectives||[]).length?'<h2>Objectives</h2><ul>'+p.objectives.map(o=>`<li>${esc(o)}</li>`).join('')+'</ul>':'')
++`<p style="margin-top:24px"><a class="btn gold" href="programs.html">Back to Academic Programs</a> <a class="btn" href="${esc(admissionUrl(s))}" target="_blank" rel="noopener">Apply for admission</a></p>`;}
+</script></body></html>

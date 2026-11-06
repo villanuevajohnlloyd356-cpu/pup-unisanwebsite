@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Academic Programs – PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main><section class="pagehead"><div class="wrap"><h1>Academic programs</h1><p>Undergraduate, diploma and graduate programs offered at Unisan.</p></div></section>
+<section class="s"><div class="wrap"><label class="sr" for="q" style="position:absolute;left:-9999px">Search programs</label><input id="q" type="search" placeholder="Search programs" style="max-width:340px;border-radius:14px;padding:16px 18px">
+<div id="list"></div></div></section></main>
+<script type="module">
+import {sb,layout,programCard} from './js/app.js';layout('programs.html');
+const {data,error}=await sb.from('programs').select('*').order('name');const L=document.getElementById('list');
+if(error)L.innerHTML='<p class="msg err">Programs could not be loaded. Try again later.</p>';
+else{const draw=()=>{const q=document.getElementById('q').value.trim().toLowerCase();
+const r=data.filter(p=>[p.name,p.abbreviation,p.short_description,p.overview].join(' ').toLowerCase().includes(q));
+L.innerHTML=r.map(programCard).join('')||'<p class="empty">No programs match your search.</p>';};
+document.getElementById('q').oninput=draw;draw();}
+</script></body></html>

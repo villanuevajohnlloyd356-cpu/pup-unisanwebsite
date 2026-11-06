@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apply for Admission – PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main><section class="pagehead"><div class="wrap"><h1>Apply for admission</h1><p>Send your application to the PUP Unisan admissions office.</p></div></section>
+<section class="s"><div class="wrap prose"><div class="box" style="margin-bottom:22px"><p style="margin:0">Fill out this form and the campus admissions staff will review it and contact you. This is the campus pre-application. Official entrance exam schedules and requirements are announced by PUP.</p></div>
+<div id="m" role="status"></div>
+<form id="af" class="form" novalidate>
+<label>Applying as<select name="applicant_type" required><option value="">Select one</option><option>New student (Senior High graduate)</option><option>Transferee</option><option>Graduate studies</option><option>Other</option></select></label>
+<label>Full name<input name="full_name" required autocomplete="name" maxlength="120"></label>
+<label>Email<input name="email" type="email" required autocomplete="email" maxlength="160"></label>
+<label>Contact number<input name="phone" type="tel" required autocomplete="tel" maxlength="30"></label>
+<label>Birth date (optional)<input name="birth_date" type="date"></label>
+<label>Home address (optional)<input name="address" maxlength="300"></label>
+<label>Last school attended (optional)<input name="last_school" maxlength="160"></label>
+<label>Program you want to apply for<select name="program_choice" id="prog" required><option value="">Loading programs…</option></select></label>
+<label>Message or questions (optional)<textarea name="message" rows="4" maxlength="1000"></textarea></label>
+<div class="hp" aria-hidden="true"><label>Leave blank<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<label class="chk"><input type="checkbox" name="consent"> <span>I agree that PUP Unisan may collect and use the information above to process my application, in line with the Data Privacy Act of 2012.</span></label>
+<button class="btn">Submit application</button></form></div></section></main>
+<script type="module">
+import {sb,layout,esc} from './js/app.js';layout('apply.html');
+const sel=document.getElementById('prog'),af=document.getElementById('af'),msg=document.getElementById('m');
+const {data}=await sb.from('programs').select('name,abbreviation').order('name');
+sel.innerHTML='<option value="">Select a program</option>'+(data||[]).map(p=>`<option value="${esc(p.name)}">${esc(p.name)}${p.abbreviation?' ('+esc(p.abbreviation)+')':''}</option>`).join('');
+const say=(t,ok)=>{msg.innerHTML=`<p class="msg ${ok?'ok':'err'}">${esc(t)}</p>`;msg.scrollIntoView({behavior:'smooth'});};
+af.onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(af));if(f.website)return;
+const name=(f.full_name||'').trim(),email=(f.email||'').trim(),phone=(f.phone||'').trim(),t=v=>(v||'').trim()||null;
+if(name.length<2||!f.applicant_type||!f.program_choice)return say('Please fill in all required fields.',false);
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return say('Enter a valid email address.',false);
+if(phone.replace(/\D/g,'').length<7)return say('Enter a valid contact number.',false);
+if(!f.consent)return say('Please agree to the data privacy statement.',false);
+const id=crypto.randomUUID(),btn=af.querySelector('button.btn');btn.disabled=true;
+const {error}=await sb.from('applications').insert({id,applicant_type:f.applicant_type,full_name:name,email,phone,birth_date:f.birth_date||null,address:t(f.address),last_school:t(f.last_school),program_choice:f.program_choice,message:t(f.message)});
+btn.disabled=false;if(error)return say('Your application could not be sent. Please try again later.',false);
+af.style.display='none';msg.innerHTML=`<div class="box"><h2>Application received</h2><p>Thank you, ${esc(name)}. The admissions office will review your application and contact you at ${esc(email)}.</p><p>Reference number: <strong>${id.slice(0,8).toUpperCase()}</strong></p><a class="btn" href="index.html">Back to Home</a></div>`;};
+</script></body></html>

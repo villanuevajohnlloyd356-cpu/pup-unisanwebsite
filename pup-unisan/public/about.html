@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About – PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main><section class="pagehead"><div class="wrap"><h1>About PUP Unisan</h1><p id="motto"></p></div></section>
+<section class="s"><div class="wrap stack"><div><h2>Our history</h2><div id="history"></div></div><div><h2>University background</h2><div id="background"></div></div>
+<div><div class="vm"><h2>Vision</h2><div id="vision"></div></div><div class="vm"><h2>Mission</h2><div id="mission"></div></div></div>
+<div class="box"><h2>Campus information</h2><p id="info"></p></div></div></section>
+<section class="s"><div class="wrap"><h2>Campus location</h2><iframe class="map" title="Campus map" loading="lazy" src="https://www.google.com/maps?q=Polytechnic+University+of+the+Philippines+Unisan+Quezon&output=embed"></iframe></div></section></main>
+<script type="module">import {layout,getSettings,fmt,esc} from './js/app.js';layout('about.html');
+const s=await getSettings();const $=i=>document.getElementById(i);
+$('motto').textContent=s.motto;['history','background','vision','mission'].forEach(k=>$(k).innerHTML=fmt(s[k]));
+$('info').innerHTML=`Established ${esc(s.established)}<br>Motto: ${esc(s.motto)}<br>Colors: ${esc(s.colors)}<br>${esc(s.address)}`;</script></body></html>

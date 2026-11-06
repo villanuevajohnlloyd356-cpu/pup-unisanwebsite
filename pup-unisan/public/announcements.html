@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Announcements – PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main><section class="pagehead"><div class="wrap"><h1>Announcements</h1><p>Latest news and notices for students and the community.</p></div></section>
+<section class="s"><div class="wrap prose" id="l"><p>Loading…</p></div></section></main>
+<script type="module">import {sb,layout,annItem} from './js/app.js';layout('announcements.html');
+const {data,error}=await sb.from('announcements').select('*').eq('published',true).order('published_at',{ascending:false});
+l.innerHTML=error?'<p class="msg err">Announcements could not be loaded.</p>':(data||[]).map(a=>annItem(a,true)).join('')||'<p class="empty">No announcements available at the moment.</p>';
+</script></body></html>

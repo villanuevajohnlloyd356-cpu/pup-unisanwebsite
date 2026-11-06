@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Home – PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main><section class="hero" id="hero"><div class="wrap">
+<h1>Polytechnic University of the Philippines – Unisan Campus</h1>
+<p id="intro">Tanglaw ng Bayan (Light of Nation). A satellite campus of the Polytechnic University of the Philippines in Unisan, Quezon.</p>
+<div class="cta"><div><a class="btn gold" href="programs.html">Explore Programs</a><small>Browse the undergraduate, diploma and graduate programs offered at Unisan.</small></div>
+<div><a class="btn ghost" id="apply" style="color:#fff;border-color:#fff" href="apply.html">Apply Admission</a><small>Fill out the online admission form. Your application is sent straight to the campus admissions office.</small></div></div>
+</div></section>
+<section class="s"><div class="wrap"><h2>How to apply for admission</h2><ol class="steps"><li>Browse <a href="programs.html">Academic Programs</a> and pick the program you want.</li><li>Open the admission form and fill in your details and program choice.</li><li>Submit it. The campus admissions staff will review your application and contact you.</li></ol><p style="margin-top:18px"><a class="btn" id="apply2" href="apply.html">Start your application</a></p></div></section>
+<section class="s"><div class="wrap"><h2>Featured programs</h2><div class="grid" id="prog"></div></div></section>
+<section class="s"><div class="wrap"><h2>Latest announcements</h2><div id="ann"></div><a href="announcements.html">All announcements</a></div></section></main>
+<script type="module">
+import {sb,layout,programCard,annItem,getSettings,admissionUrl} from './js/app.js';import {HERO_IMAGE} from './js/config.js';
+layout('index.html');getSettings().then(s=>{document.getElementById('intro').textContent=s.intro;});
+if(HERO_IMAGE)document.getElementById('hero').style.setProperty('--hero',`url('${HERO_IMAGE}')`);
+const {data:p,error:e1}=await sb.from('programs').select('*').order('name').limit(3);
+document.getElementById('prog').innerHTML=e1?'<p class="msg err">Programs could not be loaded.</p>':(p||[]).map(programCard).join('')||'<p class="empty">No programs available yet.</p>';
+const {data:a,error:e2}=await sb.from('announcements').select('*').eq('published',true).order('published_at',{ascending:false}).limit(3);
+document.getElementById('ann').innerHTML=e2?'<p class="msg err">Announcements could not be loaded.</p>':(a||[]).map(x=>annItem(x)).join('')||'<p class="empty">No announcements available at the moment.</p>';
+</script></body></html>

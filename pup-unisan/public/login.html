@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login – PUP Unisan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main class="s" style="padding-top:64px"><div class="wrap" style="max-width:420px"><h1>Log in</h1>
+<p>Enter the email and password given to you by the site administrator.</p>
+<form id="f" novalidate><label for="e">Email</label><input id="e" type="email" autocomplete="username" required>
+<label for="p">Password</label><div class="pw"><input id="p" type="password" autocomplete="current-password" required><button type="button" id="s">Show</button></div>
+<div id="m" role="alert"></div><button class="btn" id="go" style="margin-top:12px">Log in</button></form></div></main>
+<script type="module">
+import {sb,layout} from './js/app.js';layout('login.html');
+const $=i=>document.getElementById(i);
+$('s').onclick=()=>{const h=$('p').type==='password';$('p').type=h?'text':'password';$('s').textContent=h?'Hide':'Show';};
+$('f').onsubmit=async ev=>{ev.preventDefault();const m=$('m');m.innerHTML='';
+const e=$('e').value.trim(),p=$('p').value;
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)||!p){m.innerHTML='<p class="msg err">Enter a valid email and your password.</p>';return;}
+$('go').disabled=true;const {data,error}=await sb.auth.signInWithPassword({email:e,password:p});
+if(error){$('go').disabled=false;m.innerHTML='<p class="msg err">Incorrect email or password.</p>';return;}
+const {data:pr}=await sb.from('profiles').select('role').eq('id',data.user.id).single();
+if(!pr){await sb.auth.signOut();$('go').disabled=false;m.innerHTML='<p class="msg err">This account is not authorized.</p>';return;}
+location.replace(pr.role==='admin'?'admin.html':'faculty.html');};
+</script></body></html>

@@ -1,0 +1,83 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard – PUP Unisan</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<main class="s"><div class="wrap"><h1 id="w">Admin Dashboard</h1>
+<div class="tabs" role="tablist"><button data-t="ov" class="on">Overview</button><button data-t="pr">Programs</button><button data-t="fa">Faculty</button><button data-t="ap">Applications</button><button data-t="an">Announcements</button><button data-t="pg">Pages</button><button data-t="si">Site info</button><button data-t="ac">Account</button></div>
+<div id="msg" role="status"></div><div id="v"></div></div></main>
+<dialog id="dlg"><form id="df" novalidate></form></dialog>
+<script type="module">
+import {sb,$,esc,fmtDate,layout,requireRole,logout} from './js/app.js';import {renderExtra} from './js/admin-extra.js';layout('');
+const me=await requireRole('admin');if(!me)throw 0;
+$('#w').textContent='Welcome, '+me.name;
+const say=(t,ok=true)=>{$('#msg').innerHTML=`<p class="msg ${ok?'ok':'err'}">${esc(t)}</p>`;};
+let tab='ov',F=[],A=[];
+const load=async()=>{const f=await sb.from('faculty').select('*').order('full_name');const a=await sb.from('announcements').select('*').order('created_at',{ascending:false});
+if(f.error||a.error)say('Could not load data. Refresh and try again.',false);F=f.data||[];A=a.data||[];render();};
+const api=async body=>{
+  const {data,error}=await sb.functions.invoke('manage-faculty',{body});
+  if(error){
+    const context=error.context;
+    let message=error.message||'Could not reach the faculty service.';
+    if(context&&typeof context.status==='number'&&typeof context.clone==='function'){
+      const response=context;
+      let details={};
+      try{const parsed=await response.clone().json();if(parsed&&typeof parsed==='object')details=parsed;}catch{}
+      const code=details.code||response.headers.get('sb-error-code');
+      if(response.status===404||code==='NOT_FOUND'){
+        message='Supabase Edge Function "manage-faculty" was not found. Deploy it to the project configured in public/js/config.js.';
+      }else{
+        message=details.error||details.message||`The faculty service returned HTTP ${response.status}.`;
+      }
+    }else if(context instanceof Error){
+      message=`Could not connect to the Supabase Edge Function "manage-faculty" (${context.message}). Confirm it is deployed to the configured project and that its CORS settings allow this site.`;
+    }
+    throw new Error(message);
+  }
+  return data;
+};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$('#msg').innerHTML='';render();});
+function render(){const v=$('#v');if(['pr','pg','si','ap'].includes(tab))return renderExtra(tab,v,say);
+if(tab==='ov')v.innerHTML=`<div class="stats"><div class="stat"><b>${F.length}</b>Faculty members</div><div class="stat"><b>${A.filter(a=>a.published).length}</b>Published announcements</div></div><button class="btn" onclick="go('fa')">Manage faculty</button> <button class="btn ghost" onclick="go('an')">Manage announcements</button>`;
+if(tab==='fa'){v.innerHTML=`<div class="row" style="margin:0 0 12px"><input id="fq" type="search" placeholder="Search faculty" style="max-width:280px"><button class="btn" id="addf">Add Faculty</button></div><div class="tw"><table><thead><tr><th>Name</th><th>ID</th><th>Email</th><th>Department</th><th>Position</th><th>Actions</th></tr></thead><tbody id="fb"></tbody></table></div>`;
+const draw=()=>{const q=$('#fq').value.toLowerCase();const r=F.filter(f=>[f.full_name,f.faculty_id,f.email,f.department].join(' ').toLowerCase().includes(q));
+$('#fb').innerHTML=r.map(f=>`<tr><td>${esc(f.full_name)}</td><td>${esc(f.faculty_id)}</td><td>${esc(f.email)}</td><td>${esc(f.department)}</td><td>${esc(f.position)}</td><td><button class="btn sm ghost" data-a="v" data-i="${f.id}">View</button> <button class="btn sm ghost" data-a="e" data-i="${f.id}">Edit</button> <button class="btn sm danger" data-a="d" data-i="${f.id}">Delete</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">No faculty found.</td></tr>';};
+$('#fq').oninput=draw;draw();$('#addf').onclick=()=>facForm();
+$('#fb').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const f=F.find(x=>x.id===b.dataset.i);
+if(b.dataset.a==='e')facForm(f);
+if(b.dataset.a==='v'){$('#df').innerHTML=`<h2>${esc(f.full_name)}</h2><p>ID: ${esc(f.faculty_id)}<br>Email: ${esc(f.email)}<br>Department: ${esc(f.department)}<br>Position: ${esc(f.position)}${f.photo_url?`<br><img src="${esc(f.photo_url)}" alt="" width="96">`:''}</p><button class="btn" value="x" formmethod="dialog">Close</button>`;$('#dlg').showModal();}
+if(b.dataset.a==='d'&&confirm(`Delete ${f.full_name}? This also removes their login account.`)){try{await api({action:'delete',id:f.id});say('Faculty record deleted.');load();}catch(x){say(x.message,false);}}};}
+if(tab==='an'){v.innerHTML=`<button class="btn" id="adda" style="margin-bottom:12px">New announcement</button><div id="al"></div>`;
+$('#al').innerHTML=A.map(a=>`<article class="ann"><h3>${esc(a.title)} ${a.published?'':'<span class="tag">Draft</span>'}</h3><time>${fmtDate(a.published_at||a.created_at)}</time><p>${esc(a.body.slice(0,200))}</p>
+<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="e" data-i="${a.id}">Edit</button> <button class="btn sm ghost" data-a="p" data-i="${a.id}">${a.published?'Unpublish':'Publish'}</button> <button class="btn sm danger" data-a="d" data-i="${a.id}">Delete</button></div></article>`).join('')||'<p class="empty">No announcements yet.</p>';
+$('#adda').onclick=()=>annForm();
+$('#al').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const a=A.find(x=>x.id===b.dataset.i);
+if(b.dataset.a==='e')annForm(a);
+if(b.dataset.a==='p'){const pub=!a.published;const {error}=await sb.from('announcements').update({published:pub,published_at:pub?new Date().toISOString():null}).eq('id',a.id);error?say('Could not update.',false):(say(pub?'Published.':'Unpublished.'),load());}
+if(b.dataset.a==='d'&&confirm('Delete this announcement?')){const {error}=await sb.from('announcements').delete().eq('id',a.id);error?say('Could not delete.',false):(say('Announcement deleted.'),load());}};}
+if(tab==='ac')v.innerHTML=`<p>Signed in as <strong>${esc(me.user.email)}</strong> (administrator).</p><p>Faculty accounts are created and removed in the Faculty tab.</p><button class="btn" id="lo">Log out</button>`,$('#lo').onclick=logout;}
+window.go=t=>document.querySelector(`[data-t=${t}]`).click();
+function facForm(f){const n=!f;$('#df').innerHTML=`<h2>${n?'Add Faculty':'Edit Faculty'}</h2>
+<label>Full name<input name="full_name" required value="${esc(f?.full_name)}"></label><label>Faculty ID<input name="faculty_id" required value="${esc(f?.faculty_id)}"></label>
+<label>Email<input name="email" type="email" required value="${esc(f?.email)}" ${n?'':'readonly'}></label><label>Department or program<input name="department" required value="${esc(f?.department)}"></label>
+<label>Position<input name="position" required value="${esc(f?.position)}"></label><label>Profile picture URL (optional)<input name="photo_url" value="${esc(f?.photo_url)}"></label>
+${n?'<label>Temporary password (min 8 characters)<input name="password" type="password" minlength="8" required></label>':''}<div id="fe" role="alert"></div>
+<div class="row"><button class="btn">${n?'Add Faculty':'Save changes'}</button><button class="btn ghost" type="button" id="cx">Cancel</button></div>`;
+$('#cx').onclick=()=>$('#dlg').close();$('#dlg').showModal();
+$('#df').onsubmit=async ev=>{ev.preventDefault();const d=Object.fromEntries(new FormData($('#df')));const er=t=>$('#fe').innerHTML=`<p class="msg err">${esc(t)}</p>`;
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email||''))return er('Enter a valid email address.');
+if(!d.full_name.trim()||!d.faculty_id.trim()||!d.department.trim()||!d.position.trim())return er('Fill in all required fields.');
+try{if(n)await api({action:'create',...d});else{const {error}=await sb.from('faculty').update({full_name:d.full_name,faculty_id:d.faculty_id,department:d.department,position:d.position,photo_url:d.photo_url||null}).eq('id',f.id);if(error)throw new Error(error.code==='23505'?'Faculty ID already exists.':'Could not save changes.');}
+$('#dlg').close();say(n?'Faculty added.':'Faculty updated.');load();}catch(x){er(x.message);}};}
+function annForm(a){$('#df').innerHTML=`<h2>${a?'Edit announcement':'New announcement'}</h2><label>Title<input name="title" required value="${esc(a?.title)}"></label>
+<label>Content<textarea name="body" rows="6" required>${esc(a?.body)}</textarea></label><label><input type="checkbox" name="pub" style="width:auto" ${a?.published?'checked':''}> Publish now</label><div id="fe" role="alert"></div>
+<div class="row"><button class="btn">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div>`;
+$('#cx').onclick=()=>$('#dlg').close();$('#dlg').showModal();
+$('#df').onsubmit=async ev=>{ev.preventDefault();const d=new FormData($('#df'));const title=d.get('title').trim(),body=d.get('body').trim();
+if(!title||!body)return $('#fe').innerHTML='<p class="msg err">Title and content are required.</p>';
+const pub=d.get('pub')==='on';const row={title,body,published:pub,published_at:pub?(a?.published_at||new Date().toISOString()):null};
+const {error}=a?await sb.from('announcements').update(row).eq('id',a.id):await sb.from('announcements').insert(row);
+if(error)return $('#fe').innerHTML='<p class="msg err">Could not save the announcement.</p>';$('#dlg').close();say('Announcement saved.');load();};}
+load();
+</script></body></html>
